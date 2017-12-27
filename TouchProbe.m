@@ -113,58 +113,57 @@ classdef TouchProbe<handle
         
         %METHOD 1 BY FORCE
         function img = force_scan(self, step)
-            step = 0.1;
-            idx = 1 / step;
-            self.data = zeros(7, 5, 3);
+            idx = int8(1 / step)
+            self.data = zeros(1, 1, 3);
             row = 0;
             y_max = 3.5;
             x_max = 2.5;
             for y = 0:step:y_max
                 if mod(row,2) == 0
                     for x = 0:step:x_max
-                        sensor_data = [];
                         y_idx = int8((y_max - y) * idx + 1);
                         x_idx = int8(x * idx + 1);
                         self.set_point(x, y, 1.5);
                         pause(2);
                         self.set_point(-1, -1, 0);
-                        pause(0.5);
-                        self.data(y_idx, x_idx, :) = self.force_value;
-                        self.data(y_idx, x_idx, :)
+                        pause(2);
+                        self.data(y_idx, x_idx, :) = self.c_height / 10.0;
                         self.gui.zEditField.Value = 0;
                     end
                 else
                     for x = x_max:-step:0
-                        sensor_data = [];
                         y_idx = int8((y_max - y) * idx + 1);
                         x_idx = int8(x * idx + 1);
                         self.set_point(x, y, 1.5);
                         pause(2);
                         self.set_point(-1, -1, 0);
-                        pause(0.5);
-                        self.data(y_idx, x_idx, :) = self.force_value;
-                        self.data(y_idx, x_idx, :)
+                        pause(2);
+                        self.data(y_idx, x_idx, :) = self.c_height / 10.0;
                         self.gui.zEditField.Value = 0;
                     end
                 end  
                 row = row + 1;
             end
-            img = self.get_3d_map(self.data);
+            img = self.get_3d_map();
         end
         
         function img = get_3d_map(self)
             max_val = max(self.data);
             min_val = min(self.data);
-            rgb_ratio = 1 / (max_val - min_val);
+            diff = (max_val - min_val);
+            if diff == 0
+                rgb_ratio = 1;
+            else
+                rgb_ratio = 1 / diff;
+            end
             self.data = 1 - ((self.data - min_val) .* rgb_ratio);
-            img = image(self.data)
+            img = self.data
         end
         
         %METHOD 2 DETECT HEIGHT BY BINARY SEARCH
         function img = z_scan(self, step)
-            step = 0.1;
-            idx = 1 / step;
-            self.data = zeros(7, 5, 3);
+            idx = int8(1 / step);
+            self.data = zeros(1, 1, 3);
             row = 0;
             y_max = 3.5
             x_max = 2.5
@@ -188,7 +187,7 @@ classdef TouchProbe<handle
                 end
                 row = row + 1;
             end
-            img = self.get_3d_map(self.data);
+            img = self.get_3d_map();
             self.set_point(0, 0, 1.5);
         end
         
@@ -217,9 +216,8 @@ classdef TouchProbe<handle
         
         %METHOD 3 BY CHANGE IN FORCE BACKTRACK
         function img = backtrack_scan(self, step)
-            step = 0.1;
-            idx = 1 / step;
-            self.data = zeros(7, 5, 3);
+            idx = int8(1 / step);
+            self.data = zeros(1, 1, 3);
             row = 0;
             y_max = 3.5
             x_max = 2.5
@@ -264,11 +262,10 @@ classdef TouchProbe<handle
             self.gui.HeightzEditField.Value = z + 1;
         end
         
-        %METHOOD 4 BY DRAFT
-        function img = draft_scan(self, step)
-            step = 0.1;
-            idx = 1 / step;
-            self.data = zeros(7, 5, 3);
+        %METHOOD 4 BY DRAG
+        function img = drag_scan(self, step)
+            idx = int8(1 / step);
+            self.data = zeros(1, 1, 3);
             y_max = 3.5
             x_max = 2.5
             for x = 0:step:x_max
@@ -279,9 +276,9 @@ classdef TouchProbe<handle
                 pause(3);
                 while y <= (y_max + step)
                     self.set_point(x, y, 0);
-                    pause(0.5);
+                    pause(2);
                     y_idx = int8((y_max - y) * idx + 1);
-                    self.data(y_idx, x_idx, :) = self.force_value;
+                    self.data(y_idx, x_idx, :) = self.c_height / 10.0;
                     y = y + step;
                 end
             end
